@@ -22,15 +22,16 @@ class RepartitionLiteTransformStepBatch(
   override def transform(inputData: Map[String, ResultBatchData]): OutputBatchTransformData = {
 
     val sc = sparkSession.sparkContext
-    //val rowTag = properties.get("rowTag").getOrElse("")
+
+
     val inputStream = inputData.head._2.data.map(_.mkString)
     val stringInputStream: String = inputStream.reduce((x, y)=>x+y)
     val allNodes: Seq[Node] = XML.loadString(stringInputStream).child
     val tagsList: Seq[String] = allNodes.map(node => node.toString())
     val xmlStringRDD = sc.parallelize(tagsList)
-
-    //val df = new XmlReader().withRowTag(rowTag).xmlRdd(sparkSession.sqlContext, xmlStringRDD).rdd
     val df = new XmlReader().xmlRdd(sparkSession.sqlContext, xmlStringRDD).rdd
+
+
 
     OutputBatchTransformData(df.repartition(5))
 

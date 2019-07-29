@@ -12,40 +12,28 @@ import com.stratio.sparta.sdk.lite.streaming.models._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.streaming.dstream.DStream
 
 import scala.xml.XML
 
 class RepartitionLiteTransformStepStreaming(
-                                         sparkSession: SparkSession,
-                                         streamingContext: StreamingContext,
-                                         properties: Map[String, String]
-                                       ) extends LiteCustomStreamingTransform(sparkSession, streamingContext, properties) {
+                                             sparkSession: SparkSession,
+                                             streamingContext: StreamingContext,
+                                             properties: Map[String, String]
+                                           ) extends LiteCustomStreamingTransform(sparkSession, streamingContext, properties) {
 
   override def transform(inputData: Map[String, ResultStreamingData]): OutputStreamingTransformData = {
 
     println("Se inicia el custom de transformación XML con Streaming")
 
-
     val sparkS = sparkSession
 
-    /*
-    // Inicial
-    val newStream = inputData.head._2.data.transform { rdd =>
-      rdd.repartition(5)
-    }
-    */
-
     val xmlStream = inputData.head._2.data.transform { rdd =>
-
-
-
-
-      val arrayString: Array[String] = rdd.map(line => line.mkString).collect()
-      val rddString: RDD[String] = sparkS.sparkContext.parallelize(arrayString)
-      rddString.map(line => Row(line))
-
-
-
+      val xmlString = rdd.map(line=>line.mkString).collect.mkString
+      val allNodes = XML.loadString(xmlString).child
+      val tagsList: Seq[String] = allNodes.map(node => node.mkString)
+      val xmlStringRDD: RDD[String] = sparkS.sparkContext.parallelize(tagsList)
+      new XmlReader().xmlRdd(sparkS.sqlContext, xmlStringRDD).rdd
     }
 
     OutputStreamingTransformData(xmlStream)
