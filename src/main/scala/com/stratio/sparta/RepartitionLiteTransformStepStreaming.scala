@@ -9,6 +9,7 @@ package com.stratio.sparta
 import com.databricks.spark.xml.XmlReader
 import com.stratio.sparta.sdk.lite.streaming._
 import com.stratio.sparta.sdk.lite.streaming.models._
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.streaming.StreamingContext
 
@@ -24,7 +25,8 @@ class RepartitionLiteTransformStepStreaming(
 
     println("Se inicia el custom de transformación XML con Streaming")
 
-    val sc = sparkSession.sparkContext
+
+    val sparkS = sparkSession
 
     /*
     // Inicial
@@ -35,17 +37,14 @@ class RepartitionLiteTransformStepStreaming(
 
     val xmlStream = inputData.head._2.data.transform { rdd =>
 
-      val xmlString = rdd.map(registry => registry.toString).reduce((x,y)=> x+y)
-      println("Se imprime xmlString")
-      println(xmlString)
-      val allNodes = XML.loadString(xmlString).child
-      val tagsList: Seq[String] = allNodes.map(node => node.toString())
-      println("Se imprime el tag list")
-      val xmlStringRDD = sc.parallelize(tagsList)
-      println("Se imprime xmlStringRDD")
-      xmlStringRDD.foreach(println)
-      val df = new XmlReader().xmlRdd(sparkSession.sqlContext, xmlStringRDD).rdd
-      df.repartition(5)
+
+
+
+      val arrayString: Array[String] = rdd.map(line => line.mkString).collect()
+      val rddString: RDD[String] = sparkS.sparkContext.parallelize(arrayString)
+      rddString.map(line => Row(line))
+
+
 
     }
 
